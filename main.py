@@ -346,7 +346,7 @@ def logging_removing(results, filepath):
     try:
         os.remove(filepath)
     except:
-        debug_error_log('audio file used by another process, unable to remove') 
+        debug_error_log(f'audio file {os.path.basename(filepath)} used by another process, unable to remove') 
     
 def format_db_configs(data, audio_dir):
     sources = {}
@@ -407,14 +407,10 @@ def process_run(configs, process_num, num_threads_per_process, sources_keys, que
                 finally:
                     logging_removing(results, filepath)
 
-            if stop_thread:# or not thread.running:
+            if stop_thread:
                 thread.stop()
                 debug_error_log(f"{thread.name}: Stopped")
-                # try:
-                #     threads.remove(thread)
-                # except Exception as e:
-                #     debug_error_log("Threads Removal" + str(e))
-
+                
             # print(f"Running state <{thread.name}> : {'active' if not stop_thread else 'inactive'}")
         
         if stop_thread:
@@ -424,7 +420,7 @@ def process_run(configs, process_num, num_threads_per_process, sources_keys, que
     
     # if any files are left to match
     # match them by identifying from folder
-    residual_audios = glob.glob("./audio_recordings/**/*.wav") 
+    residual_audios = glob.glob(configs["base_dir"]+"/audio_recordings/**/*.wav") 
     for residual_audio_filepath in residual_audios:
         try:
             results = match_audio(djv, residual_audio_filepath)
