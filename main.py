@@ -26,7 +26,7 @@ class BackgroundRecording(threading.Thread):
         self.dest_basename = dest_basename
         self.queue = queue
         self.running = False
-        # self.c_id = name
+        self.retry = 5
         # self.dt = datetime.now()
         super().__init__(name=name)
         self.start()
@@ -50,8 +50,11 @@ class BackgroundRecording(threading.Thread):
             try:
                 response = requests.get(self.audio_url, stream=True)
             except Exception as e:
+                self.retry -= 1
+                if self.retry < 1:
+                    self.running = False
                 debug_error_log(
-                    'Unable to record audio. Check the internet connection.'
+                    f'{self.getName()}: Unable to record audio.'
                 )
                 # return
                 continue
@@ -79,7 +82,7 @@ class BackgroundRecording(threading.Thread):
         self.join()
 
 def debug_error_log(text:str, timestamp:bool=True):
-    with open("error.log", 'a') as err_file:
+    with open("D:/Anaconda/Audio-FingerPrinting/Desktop-Audio-Matching/error.log", 'a') as err_file:
         text = f"{datetime.now()} {text}" if timestamp else text
         print(text, file=err_file)
 
@@ -307,12 +310,12 @@ def log_needed(advert_id, channel_id):
 
 def keep_log(advert_id, channel_id):
     log_status = log_needed(advert_id, channel_id)
-    debug_error_log(f"{log_status = }")
+    debug_error_log(f"{log_status = }") # TODO store adverd id and channel id as well
 
     if not log_status:
         return
     
-    # TODO grab channel id from database
+    # grab channel id from database
     query_insert_log = """
         INSERT INTO advertisements_log(advert_id, channel_id, log_time)
         VALUES (%s, %s, %s);
@@ -345,33 +348,33 @@ def logging_removing(results, filepath):
     except:
         debug_error_log('audio file used by another process, unable to remove') 
     
-def format_db_configs(data, base_dir):
+def format_db_configs(data, audio_dir):
     sources = {}
     for row in data:
         source = {}
         id = str(row[0])
 
         source['audio_url'] = row[1]
-        source['dest_dir'] = base_dir + "/" + id
+        source['dest_dir'] = audio_dir + "/" + id
         source['prefix'] = id + "_clip_"
 
         sources[id] = source
     # print(f"{sources = }")
     return sources
     
-def load_config_db():
+def load_config_db(audio_dir):
     query_select_channels = """
         SELECT id, links FROM channels
     """
     data = execute_query(query_select_channels, req_response=True)
     # print(f"{data = }")
-    return format_db_configs(data, base_dir="./audio_recordings")
+    return format_db_configs(data, audio_dir=audio_dir)
  
-def process_run(sources, process_num, num_threads_per_process, sources_keys, queue, djv):
+def process_run(configs, process_num, num_threads_per_process, sources_keys, queue, djv):
     global threads
     # print(process_num)
     keys_idx = process_num*num_threads_per_process
-    # threads = []
+    sources = configs['sources']
 
     sources_keys = sources_keys[keys_idx : keys_idx + num_threads_per_process]
 
@@ -389,7 +392,7 @@ def process_run(sources, process_num, num_threads_per_process, sources_keys, que
     stop_thread = False
     while True:
         # print('Running in Fg')
-        stop_thread = stop_recoding('configs.json')
+        stop_thread = stop_recoding(configs['configs_path'])
         for thread in threads:
             for _ in range(thread.queue.qsize()):
                 filepath = thread.queue.get()
@@ -404,9 +407,13 @@ def process_run(sources, process_num, num_threads_per_process, sources_keys, que
                 finally:
                     logging_removing(results, filepath)
 
-            if stop_thread:
+            if stop_thread:# or not thread.running:
                 thread.stop()
                 debug_error_log(f"{thread.name}: Stopped")
+                # try:
+                #     threads.remove(thread)
+                # except Exception as e:
+                #     debug_error_log("Threads Removal" + str(e))
 
             # print(f"Running state <{thread.name}> : {'active' if not stop_thread else 'inactive'}")
         
@@ -442,7 +449,7 @@ def main(configs, queue, djv):
     # processes = []
     for process_num in range(num_processes):
         process = multiprocessing.Process(
-            target=process_run, args=(configs['sources'], process_num, num_threads_per_process, sources_keys, queue, djv)
+            target=process_run, args=(configs, process_num, num_threads_per_process, sources_keys, queue, djv)
         )
         processes.append(process)
         process.start()
@@ -451,10 +458,24 @@ def main(configs, queue, djv):
         process.join()
 
 if __name__=="__main__":
+    configs_path = 'D:/Anaconda/Audio-FingerPrinting/Desktop-Audio-Matching/configs/configs.json'
+    queue = multiprocessing.Queue()
     create_table()
 
+    # configurations 
+    if not os.path.exists(configs_path):
+        debug_error_log("No Config file in the directory")
+        raise Exception(f"No Config file in the directory")
+    configs = load_config(configs_path)
+
+    base_dir = configs["base_dir"]
+    sources = load_config_db(os.path.join(base_dir, configs["rel_audio_dir"]))
+    configs['sources'] = sources
+    configs['configs_path'] = configs_path
+
     # initialize dejavu
-    with open('./configs/dejavu.cnf.SAMPLE') as f:
+    dejavu_conf_path = os.path.join(base_dir, configs["rel_dejavu_conf"])
+    with open(dejavu_conf_path) as f:
         config = json.load(f)
     try:
         djv = Dejavu(config)
@@ -462,18 +483,7 @@ if __name__=="__main__":
         debug_error_log("Can't initiate Dejavu")
         exit()
 
-    queue = multiprocessing.Queue()
-
-    configs_path = 'configs.json'
-    if not os.path.exists(configs_path):
-        debug_error_log("No Config file in the directory")
-        raise Exception(f"No Config file in the directory")
-    configs = load_config(configs_path)
-
-    sources = load_config_db()
-
-    configs['sources'] = sources
-
+    # Starting application
     main(configs, queue, djv)
 
     debug_error_log("Background Threads stopped")
