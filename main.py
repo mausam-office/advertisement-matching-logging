@@ -8,7 +8,7 @@ import time
 import requests
 import mysql.connector
 
-from datetime import datetime
+from datetime import datetime, timedelta
 from math import ceil
 from pprint import pprint
 
@@ -271,14 +271,34 @@ def check_duration(advert_id, channel_id):
             # if duration.seconds < 30:
             #     '''No need to log'''
 
+def check_validity(advert_id, channel_id):
+    query_select = f"""
+        SELECT validity_from, validity_to FROM advertisement_channel
+        WHERE advertisement_id={advert_id} AND channel_id={channel_id}
+    """
+    data = execute_query(query_select, req_response=True)
+
+    if data:
+        # type is datetime.date
+        validity_from, validity_to = data[0][0], data[0][1]
+        today = datetime.now().date()
+        # date_mapped = today + timedelta(days=3)
+        return validity_from <= today <= validity_to
+    return False
+
 def log_needed(advert_id, channel_id):
+    # check validity
+    is_valid = check_validity(advert_id, channel_id)
+    if not is_valid:
+        return False
+    
     duration = check_duration(advert_id, channel_id)
     
-    debug_error_log(f"{duration = }")
-    try:
-        debug_error_log(f"{duration.seconds = }")
-    except:
-        pass
+    # debug_error_log(f"{duration = }")
+    # try:
+    #     debug_error_log(f"{duration.seconds = }")
+    # except:
+    #     pass
 
     if duration is not None and duration.seconds < 30:  # duration.total_seconds() returns float precision
         '''No need to log'''
