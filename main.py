@@ -471,6 +471,8 @@ if __name__=="__main__":
 
     # initialize dejavu
     dejavu_conf_path = os.path.join(base_dir, configs["rel_dejavu_conf"])
+    if not os.path.exists(dejavu_conf_path):
+        debug_error_log("Bad dejavu config file path.")
     with open(dejavu_conf_path) as f:
         config = json.load(f)
     try:
