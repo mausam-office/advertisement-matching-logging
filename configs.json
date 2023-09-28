@@ -1,6 +1,0 @@
-{
-    "update": false,
-    "stop_threads": true,
-    "num_threads_per_process": 8,
-    "max_threads_per_process": 15
-}
