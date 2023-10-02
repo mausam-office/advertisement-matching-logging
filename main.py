@@ -375,7 +375,19 @@ def load_config_db(audio_dir):
     data = execute_query(query_select_channels, req_response=True)
     # print(f"{data = }")
     return format_db_configs(data, audio_dir=audio_dir)
- 
+
+def match_residual_audios():
+    # if any files are left to match
+    # match them by identifying from folder
+    residual_audios = glob.glob(configs["base_dir"]+"/audio_recordings/**/*.wav") 
+    for residual_audio_filepath in residual_audios:
+        try:
+            results = match_audio(djv, residual_audio_filepath)
+        except Exception as e:
+            results = None
+        finally:
+            logging_removing(results, residual_audio_filepath)
+
 def process_run(configs, process_num, num_threads_per_process, sources_keys, queue, djv):
     global threads
     # print(process_num)
@@ -424,18 +436,19 @@ def process_run(configs, process_num, num_threads_per_process, sources_keys, que
         time.sleep(1.5)
         # debug_error_log('---'*15, timestamp=False)
     
-    # if any files are left to match
-    # match them by identifying from folder
-    residual_audios = glob.glob(configs["base_dir"]+"/audio_recordings/**/*.wav") 
-    for residual_audio_filepath in residual_audios:
-        try:
-            results = match_audio(djv, residual_audio_filepath)
-        except Exception as e:
-            results = None
-        finally:
-            logging_removing(results, residual_audio_filepath)
+    # # if any files are left to match
+    # # match them by identifying from folder
+    # residual_audios = glob.glob(configs["base_dir"]+"/audio_recordings/**/*.wav") 
+    # for residual_audio_filepath in residual_audios:
+    #     try:
+    #         results = match_audio(djv, residual_audio_filepath)
+    #     except Exception as e:
+    #         results = None
+    #     finally:
+    #         logging_removing(results, residual_audio_filepath)
 
 def main(configs, queue, djv):
+    match_residual_audios()
     global processes
     update_requires = configs["update"]
     sources = configs['sources']
