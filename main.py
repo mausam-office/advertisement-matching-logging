@@ -181,10 +181,14 @@ def filter_results(results):
     return filtered_results
 
 def match_audio(djv, filepath):
-    results = djv.recognize(
-        FileRecognizer, 
-        filepath
-    )
+    try:
+        results = djv.recognize(
+            FileRecognizer, 
+            filepath
+        )
+    except Exception as e:
+        debug_error_log(str(e))
+    
     if results['results']:
         results = filter_results(results)
     else:
@@ -192,7 +196,6 @@ def match_audio(djv, filepath):
     return results
 
 def db_connection():
-    # conn = psycopg2.connect("dbname=dejavu user=postgres password=root")
     conn = psycopg2.connect(f"""
             dbname={config('PG_DBNAME')} user={config('PG_USER')} password={config('PG_PASSWORD')}
         """)
@@ -200,10 +203,10 @@ def db_connection():
 
 def mysql_db_conn():
     conn = mysql.connector.connect(
-        host=config("MYSQL_HOST"),#"192.168.10.60",
-        user=config("MYSQL_USER"),#"audio_advertisement",
-        password=config("MYSQL_PASSWORD"),#"12345678",
-        database=config("MYSQL_DATABASE"),#"radio"
+        host=config("MYSQL_HOST"),
+        user=config("MYSQL_USER"),
+        password=config("MYSQL_PASSWORD"),
+        database=config("MYSQL_DATABASE")
     )
     return conn
 
@@ -361,6 +364,7 @@ def logging_removing(results, filepath):
     # perform database operation
     # print('results ', results)
     if results:
+        debug_error_log(f'results: {json.dumps(results)}')
         for result in list(results.values()):
             # print('single result ', result)
             channel_id = get_channel_id(filepath)
