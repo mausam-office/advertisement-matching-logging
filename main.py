@@ -11,6 +11,7 @@ import mysql.connector
 from datetime import datetime, timedelta
 from math import ceil
 from pprint import pprint
+from requests.exceptions import SSLError
 
 from dejavu import Dejavu
 from dejavu.logic.recognizer.file_recognizer import FileRecognizer
@@ -49,13 +50,14 @@ class BackgroundRecording(threading.Thread):
             self.dest_filename = os.path.join(self.dest_dir, self.dest_basename+ dt +'.wav')
             try:
                 response = requests.get(self.audio_url, stream=True)
-            except Exception as e:
+            except (Exception, SSLError) as e:
                 self.retry -= 1
+                time.sleep(5)   # 5 seconds delay for next iteration
                 if self.retry < 1:
                     self.running = False
-                debug_error_log(
-                    f'{self.getName()}: Unable to record audio.'
-                )
+                    debug_error_log(
+                        f'{self.getName()}: Unable to record audio due to error\n{str(e)}'
+                    )
                 # return
                 continue
             if storing:
