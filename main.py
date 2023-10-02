@@ -9,6 +9,7 @@ import requests
 import mysql.connector
 
 from datetime import datetime, timedelta
+from decouple import config
 from math import ceil
 from pprint import pprint
 from requests.exceptions import SSLError
@@ -190,15 +191,18 @@ def match_audio(djv, filepath):
     return results
 
 def db_connection():
-    conn = psycopg2.connect("dbname=dejavu user=postgres password=root")
+    # conn = psycopg2.connect("dbname=dejavu user=postgres password=root")
+    conn = psycopg2.connect(f"""
+            dbname={config('PG_DBNAME')} user={config('PG_USER')} password={config('PG_PASSWORD')}
+        """)
     return conn
 
 def mysql_db_conn():
     conn = mysql.connector.connect(
-        host="192.168.10.60",
-        user="audio_advertisement",
-        password="12345678",
-        database="radio"
+        host=config("MYSQL_HOST"),#"192.168.10.60",
+        user=config("MYSQL_USER"),#"audio_advertisement",
+        password=config("MYSQL_PASSWORD"),#"12345678",
+        database=config("MYSQL_DATABASE"),#"radio"
     )
     return conn
 
