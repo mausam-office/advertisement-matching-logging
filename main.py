@@ -7,6 +7,7 @@ import psycopg2
 import time
 import requests
 import mysql.connector
+import re
 
 from datetime import datetime, timedelta
 from decouple import config
@@ -314,7 +315,7 @@ def log_needed(advert_id, channel_id):
         return False
     return True
 
-def keep_log(advert_id, channel_id):
+def keep_log(advert_id, channel_id, log_dt):
     log_status = log_needed(advert_id, channel_id)
     debug_error_log(f"{log_status = }") # TODO store adverd id and channel id as well
 
@@ -326,7 +327,7 @@ def keep_log(advert_id, channel_id):
         INSERT INTO advertisements_log(advert_id, channel_id, log_time)
         VALUES (%s, %s, %s);
     """
-    execute_query(query_insert_log, values=(advert_id, channel_id, datetime.now()), insert=True)
+    execute_query(query_insert_log, values=(advert_id, channel_id, log_dt), insert=True)
 
 def record_audio(key, data, queue):
     # audio_url, dest_dir, prefix
@@ -338,6 +339,24 @@ def record_audio(key, data, queue):
             name=key
     )
 
+def dt_from_filepath(filepath):
+    # regular expression pattern to match the datetime part
+    pattern = r'\d{4}-\d{2}-\d{2} \d{2}-\d{2}-\d{2}.\d{6}'
+    # Use re.search to find the datetime part in the filename
+    match = re.search(pattern, filepath)
+    if match:
+        # Extract the matched datetime string
+        datetime_str = match.group(0)
+        
+        # Convert the datetime string into a datetime object
+        datetime_obj = datetime.strptime(datetime_str, '%Y-%m-%d %H-%M-%S.%f')
+        
+        # Now you have a datetime object
+        return datetime_obj
+    else:
+        debug_error_log("Datetime not found in the filename.")
+        return None
+
 def logging_removing(results, filepath):
     # perform database operation
     # print('results ', results)
@@ -346,8 +365,9 @@ def logging_removing(results, filepath):
             # print('single result ', result)
             channel_id = get_channel_id(filepath)
             # keep_log(result['song_id'], source)
+            log_dt = dt_from_filepath(filepath)
 
-            keep_log(result['song_id'], channel_id)
+            keep_log(result['song_id'], channel_id, log_dt)
     # remove the file after matching
     try:
         os.remove(filepath)
@@ -473,6 +493,7 @@ def main(configs, queue, djv):
         process.join()
 
 if __name__=="__main__":
+    debug_error_log('---'*15, timestamp=False)
     configs_path = 'D:/Anaconda/Audio-FingerPrinting/Desktop-Audio-Matching/configs/configs.json'
     queue = multiprocessing.Queue()
     create_table()
