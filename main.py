@@ -317,7 +317,7 @@ def log_needed(advert_id, channel_id):
 
 def keep_log(advert_id, channel_id, log_dt):
     log_status = log_needed(advert_id, channel_id)
-    debug_error_log(f"{log_status = }") # TODO store adverd id and channel id as well
+    debug_error_log(f"{log_status = } for {advert_id = } and {channel_id = }") # store advert id and channel id as well
 
     if not log_status:
         return
