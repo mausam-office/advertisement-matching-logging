@@ -21,7 +21,7 @@ from dejavu.logic.recognizer.file_recognizer import FileRecognizer
 processes = []
 threads = []
 
-LOG_PATH  = "D:/Anaconda/Audio-FingerPrinting/Desktop-Audio-Matching/errors/error.log"
+LOG_DIR  = "D:/Anaconda/Audio-FingerPrinting/Desktop-Audio-Matching/errors"
 
 class BackgroundRecording(threading.Thread):
     '''For recording live stream'''
@@ -88,7 +88,8 @@ class BackgroundRecording(threading.Thread):
         self.join()
 
 def debug_error_log(text:str, timestamp:bool=True):
-    with open(LOG_PATH, 'a') as err_file:
+    os.makedirs(LOG_DIR, exist_ok=True)
+    with open(LOG_DIR + "/error.log", 'a') as err_file:
         text = f"{datetime.now()} {text}" if timestamp else text
         print(text, file=err_file)
 
