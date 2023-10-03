@@ -290,7 +290,7 @@ def check_duration(advert_id, channel_id):
 def check_validity(advert_id, channel_id):
     query_select = f"""
         SELECT validity_from, validity_to FROM advertisement_channel
-        WHERE advertisement_id={advert_id} AND channel_id={channel_id}
+        WHERE registered_id={advert_id} AND channel_id={channel_id}
     """
     data = execute_query(query_select, req_response=True)
 
