@@ -420,17 +420,20 @@ def load_config_db(audio_dir):
     # print(f"{data = }")
     return format_db_configs(data, audio_dir=audio_dir)
 
+def matching(filepath):
+    try:
+        results = match_audio(djv, filepath)
+    except Exception as e:
+        results = None
+    finally:
+        logging_removing(results, filepath)
+
 def match_residual_audios():
     # if any files are left to match
     # match them by identifying from folder
     residual_audios = glob.glob(configs["base_dir"]+"/audio_recordings/**/*.wav") 
     for residual_audio_filepath in residual_audios:
-        try:
-            results = match_audio(djv, residual_audio_filepath)
-        except Exception as e:
-            results = None
-        finally:
-            logging_removing(results, residual_audio_filepath)
+        matching(residual_audio_filepath)
 
 def process_run(configs, process_num, num_threads_per_process, sources_keys, queue, djv):
     global threads
@@ -462,12 +465,7 @@ def process_run(configs, process_num, num_threads_per_process, sources_keys, que
                 if not os.path.exists(filepath):
                     debug_error_log(f"No file named {filepath}")
                     # USE BOOLEAN TO SKIP MATCHING 
-                try:
-                    results = match_audio(djv, filepath)
-                except Exception as e:
-                    results = None
-                finally:
-                    logging_removing(results, filepath)
+                matching(filepath)
 
             if stop_thread:
                 thread.stop()
