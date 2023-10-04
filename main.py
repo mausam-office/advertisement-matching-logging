@@ -312,14 +312,14 @@ def check_validity(advert_id, channel_id):
         validity_from, validity_to = data[0][0], data[0][1]
         today = datetime.now().date()
         # date_mapped = today + timedelta(days=3)
-        return validity_from <= today <= validity_to
-    return False
+        return validity_from <= today <= validity_to, "Invalid date range"
+    return False, "No data or channel id and advertisement id mismatch"
 
 def log_needed(advert_id, channel_id):
     # check validity
-    is_valid = check_validity(advert_id, channel_id)
+    is_valid, msg = check_validity(advert_id, channel_id)
     if not is_valid:
-        debug_error_log("Date range validation failed")
+        debug_error_log(msg)
         return False
     
     duration = check_duration(advert_id, channel_id)
