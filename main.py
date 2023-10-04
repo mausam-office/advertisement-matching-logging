@@ -497,8 +497,6 @@ def main(configs, queue, djv):
     num_threads_per_process = configs['num_threads_per_process']
     max_threads_per_process = configs['max_threads_per_process']
 
-    # print(list(configs['sources'].keys()))
-    # TODO read DB to create sources dictionary and assin value to `sources` key 
     sources_keys = list(configs['sources'].keys())
 
     num_processes = cores_reqirement(len(sources), num_threads_per_process, max_threads_per_process)
