@@ -1,7 +1,6 @@
 import glob
 import os
 import json
-import multiprocessing
 import threading
 import psycopg2
 import time
@@ -12,6 +11,7 @@ import re
 from datetime import datetime, timedelta
 from decouple import config
 from math import ceil
+from multiprocessing import Process, Queue
 from pprint import pprint
 from requests.exceptions import SSLError
 
@@ -25,7 +25,7 @@ LOG_DIR  = "D:/Anaconda/Audio-FingerPrinting/Desktop-Audio-Matching/errors"
 
 class BackgroundRecording(threading.Thread):
     '''For recording live stream'''
-    def __init__(self, audio_url, dest_dir, dest_basename, queue, name='Background Recording'):
+    def __init__(self, audio_url:str, dest_dir:str, dest_basename:str, queue:Queue, name:str='Background Recording'):
         self.audio_url = audio_url
         self.dest_dir = dest_dir
         self.dest_basename = dest_basename
@@ -93,46 +93,63 @@ def debug_error_log(text:str, timestamp:bool=True):
         text = f"{datetime.now()} {text}" if timestamp else text
         print(text, file=err_file)
 
-def get_channel_id(filepath):
+def get_channel_id(filepath:str):
     basename = os.path.basename(filepath)
     basename = os.path.splitext(basename)[0]
     id = basename.split('_')[0]
     return id
 
-def load_config(data_path):
+def load_config(data_path:str):
     with open(data_path, 'r') as config_file:
         configs = json.load(config_file)
         # pprint(configs)
         return configs
     
-def stop_recoding(data_path):
+def stop_recoding(data_path:str):
     configs = load_config(data_path)
     return configs["stop_threads"]
 
-def cores_reqirement(num_sources, num_threads_per_process, max_threads_per_process):
-    num_process = ceil(num_sources/num_threads_per_process)
-    # validation for maximum core limit
-    allow_num_cores = os.cpu_count() - 2    # type:ignore
-    if num_process < allow_num_cores:
-        return num_process
-    else:
-        '''
-            Need to calculate the number of process after increasing the value of num_threads_per_process.
-            This increased value must be such that num_process has value just less than num_cores minus 2.
-            And this value should be updated in configs.json file as well.
-        '''
-        cond = True
-        while cond:
-            num_threads_per_process += 1
-            num_process = ceil(num_sources/num_threads_per_process)
-            if num_process < allow_num_cores:
-                cond = False
-                return num_process
-            # number of threads per process limit
-            if num_threads_per_process > max_threads_per_process:
-                raise ValueError(f"Maximum number of threads per process is 15")
+def cores_reqirement(num_sources:int, num_threads_per_process:int, max_threads_per_process:int):
+    num_cores = os.cpu_count()   # type:ignore
+    allowed_num_cores = 1 if num_cores <=2 else 2 \
+        if num_cores<=4 else 4 \
+            if num_cores<=8 else 8
+    debug_error_log(f"{allowed_num_cores = }")
+    num_threads_per_process = int(ceil(num_sources/allowed_num_cores)) # type:ignore
 
-def update_configs(data: dict, is_source=False):
+    if num_sources < allowed_num_cores:
+        usable_num_cores = num_sources
+    else:
+        usable_num_cores = ceil(num_sources/num_threads_per_process)
+    debug_error_log(f"{usable_num_cores = }")
+
+    if num_threads_per_process > max_threads_per_process:
+        debug_error_log((f"Maximum number of threads per process is {max_threads_per_process}. Performance may degrade."))
+    return usable_num_cores, num_threads_per_process
+    
+    # num_process = ceil(num_sources/num_threads_per_process)
+    # # validation for maximum core limit
+    # allowed_num_cores = os.cpu_count() - 2  # type:ignore
+    # if num_process <= allowed_num_cores:
+    #     return num_process
+    # else:
+    #     '''
+    #         Need to calculate the number of process after increasing the value of num_threads_per_process.
+    #         This increased value must be such that num_process has value just less than num_cores minus 2.
+    #         And this value should be updated in configs.json file as well.
+    #     '''
+    #     cond = True
+    #     while cond:
+    #         num_threads_per_process += 1
+    #         num_process = ceil(num_sources/num_threads_per_process)
+    #         if num_process <= allowed_num_cores:
+    #             cond = False
+    #             return num_process
+    #         # number of threads per process limit
+    #         if num_threads_per_process > max_threads_per_process:
+    #             debug_error_log(f"Maximum number of threads per process is 15")
+
+def update_configs(data:dict, is_source:bool=False):
     configs = load_config('configs.json')
 
     """ # if is_source:
@@ -156,7 +173,7 @@ def update_configs(data: dict, is_source=False):
     with open('configs.json', 'w', encoding='utf-8') as config_file:
         json.dump(configs, config_file, ensure_ascii=False, indent=4)
 
-def filter_results(results):
+def filter_results(results:dict):
     filtered_results = {}
     for i in range(len(results['results'])):
         fingerprinted_confidence = results['results'][i]['fingerprinted_confidence']
@@ -183,7 +200,7 @@ def filter_results(results):
             # print('not validated')
     return filtered_results
 
-def match_audio(djv, filepath):
+def match_audio(djv:Dejavu, filepath:str):
     try:
         results = djv.recognize(
             FileRecognizer, 
@@ -268,7 +285,7 @@ def create_table():
     """
     execute_query(query_create_table_advertisements_log)
 
-def get_rel_advert_id(advert_id):
+def get_rel_advert_id(advert_id:int):
     query_select_id = f"""
         SELECT id FROM advertisements 
         WHERE registered_id={advert_id}
@@ -282,7 +299,7 @@ def get_rel_advert_id(advert_id):
         rel_advert_id = None
     return rel_advert_id
 
-def check_duration(advert_id, channel_id):
+def check_duration(advert_id:int, channel_id:int):
     # For Postgres query remove `LIMIT 1` and 
     # uncomment subpart in following execute_query()
     query_select = f"""
@@ -302,7 +319,7 @@ def check_duration(advert_id, channel_id):
             # if duration.seconds < 30:
             #     '''No need to log'''
 
-def check_validity(advert_id, channel_id):
+def check_validity(advert_id:int, channel_id:int):
     query_select = f"""
         SELECT validity_from, validity_to FROM advertisement_channel
         WHERE registered_id={advert_id} AND channel_id={channel_id}
@@ -317,7 +334,7 @@ def check_validity(advert_id, channel_id):
         return validity_from <= today <= validity_to, "Invalid date range"
     return False, "No data or channel id and advertisement id mismatch"
 
-def log_needed(advert_id, channel_id):
+def log_needed(advert_id:int, channel_id:int):
     # check validity
     is_valid, msg = check_validity(advert_id, channel_id)
     if not is_valid:
@@ -338,7 +355,7 @@ def log_needed(advert_id, channel_id):
         return False
     return True
 
-def keep_log(advert_id, channel_id, log_dt):
+def keep_log(advert_id:int, channel_id:int, log_dt):
     log_status = log_needed(advert_id, channel_id)
     debug_error_log(f"{log_status = } for {advert_id = } and {channel_id = }") # store advert id and channel id as well
     rel_advert_id = get_rel_advert_id(advert_id)
@@ -353,7 +370,7 @@ def keep_log(advert_id, channel_id, log_dt):
     """
     execute_query(query_insert_log, values=(advert_id, channel_id, rel_advert_id, log_dt), insert=True)
 
-def record_audio(key, data, queue):
+def record_audio(key:str, data:dict, queue:Queue):
     # audio_url, dest_dir, prefix
     return BackgroundRecording(
             data['audio_url'],
@@ -363,7 +380,7 @@ def record_audio(key, data, queue):
             name=key
     )
 
-def dt_from_filepath(filepath):
+def dt_from_filepath(filepath:str):
     # regular expression pattern to match the datetime part
     pattern = r'\d{4}-\d{2}-\d{2} \d{2}-\d{2}-\d{2}.\d{6}'
     # Use re.search to find the datetime part in the filename
@@ -381,7 +398,7 @@ def dt_from_filepath(filepath):
         debug_error_log("Datetime not found in the filename.")
         return None
 
-def logging_removing(results, filepath):
+def logging_removing(results:dict, filepath:str):
     # perform database operation
     # print('results ', results)
     if results:
@@ -398,7 +415,7 @@ def logging_removing(results, filepath):
     except:
         debug_error_log(f'audio file {os.path.basename(filepath)} used by another process, unable to remove') 
     
-def format_db_configs(data, audio_dir):
+def format_db_configs(data:list, audio_dir:str):
     sources = {}
     for row in data:
         source = {}
@@ -412,7 +429,7 @@ def format_db_configs(data, audio_dir):
     # print(f"{sources = }")
     return sources
     
-def load_config_db(audio_dir):
+def load_config_db(audio_dir:str):
     query_select_channels = """
         SELECT id, links FROM channels
     """
@@ -420,7 +437,7 @@ def load_config_db(audio_dir):
     # print(f"{data = }")
     return format_db_configs(data, audio_dir=audio_dir)
 
-def matching(filepath):
+def matching(filepath:str):
     try:
         results = match_audio(djv, filepath)
     except Exception as e:
@@ -435,7 +452,7 @@ def match_residual_audios():
     for residual_audio_filepath in residual_audios:
         matching(residual_audio_filepath)
 
-def process_run(configs, process_num, num_threads_per_process, sources_keys, queue, djv):
+def process_run(configs:dict, process_num:int, num_threads_per_process:int, sources_keys:list, queue:Queue, djv: Dejavu):
     global threads
     # print(process_num)
     keys_idx = process_num*num_threads_per_process
@@ -489,7 +506,7 @@ def process_run(configs, process_num, num_threads_per_process, sources_keys, que
     #     finally:
     #         logging_removing(results, residual_audio_filepath)
 
-def main(configs, queue, djv):
+def main(configs:dict, queue:Queue, djv:Dejavu):
     match_residual_audios()
     global processes
     update_requires = configs["update"]
@@ -499,11 +516,11 @@ def main(configs, queue, djv):
 
     sources_keys = list(configs['sources'].keys())
 
-    num_processes = cores_reqirement(len(sources), num_threads_per_process, max_threads_per_process)
+    num_processes, num_threads_per_process = cores_reqirement(len(sources), num_threads_per_process, max_threads_per_process)
 
     # processes = []
     for process_num in range(num_processes):
-        process = multiprocessing.Process(
+        process = Process(
             target=process_run, args=(configs, process_num, num_threads_per_process, sources_keys, queue, djv)
         )
         processes.append(process)
@@ -515,7 +532,7 @@ def main(configs, queue, djv):
 if __name__=="__main__":
     debug_error_log('---'*15, timestamp=False)
     configs_path = 'D:/Anaconda/Audio-FingerPrinting/Desktop-Audio-Matching/configs/configs.json'
-    queue = multiprocessing.Queue()
+    queue = Queue()
     create_table()
 
     # configurations 
