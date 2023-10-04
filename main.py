@@ -306,6 +306,7 @@ def log_needed(advert_id, channel_id):
     # check validity
     is_valid = check_validity(advert_id, channel_id)
     if not is_valid:
+        debug_error_log("Date range validation failed")
         return False
     
     duration = check_duration(advert_id, channel_id)
@@ -318,6 +319,7 @@ def log_needed(advert_id, channel_id):
 
     if duration is not None and duration.seconds < 30:  # duration.total_seconds() returns float precision
         '''No need to log'''
+        debug_error_log("last log time validation failed")
         return False
     return True
 
