@@ -262,10 +262,23 @@ def create_table():
             sn SERIAL PRIMARY KEY,
             advert_id INTEGER NOT NULL,
             channel_id INTEGER NOT NULL,
+            advertisement_id INTEGER NOT NULL,
             log_time TIMESTAMP NOT NULL
         )
     """
     execute_query(query_create_table_advertisements_log)
+
+def get_rel_advert_id(advert_id):
+    query_select_id = f"""SELECT id FROM advertisements 
+    WHERE registered_id={advert_id}"""
+
+    data = execute_query(query_select_id, req_response=True, top_n_rows=1)
+    if data:
+        rel_advert_id = data[0][0]
+    else:
+        debug_error_log(f"Can't find advertisement id for registered id {advert_id}")
+        rel_advert_id = None
+    return rel_advert_id
 
 def check_duration(advert_id, channel_id):
     # For Postgres query remove `LIMIT 1` and 
@@ -326,16 +339,17 @@ def log_needed(advert_id, channel_id):
 def keep_log(advert_id, channel_id, log_dt):
     log_status = log_needed(advert_id, channel_id)
     debug_error_log(f"{log_status = } for {advert_id = } and {channel_id = }") # store advert id and channel id as well
+    rel_advert_id = get_rel_advert_id(advert_id)
 
-    if not log_status:
+    if not log_status or rel_advert_id is None:
         return
     
     # grab channel id from database
     query_insert_log = """
-        INSERT INTO advertisements_log(advert_id, channel_id, log_time)
-        VALUES (%s, %s, %s);
+        INSERT INTO advertisements_log(advert_id, channel_id, advertisement_id, log_time)
+        VALUES (%s, %s, %s, %s);
     """
-    execute_query(query_insert_log, values=(advert_id, channel_id, log_dt), insert=True)
+    execute_query(query_insert_log, values=(advert_id, channel_id, rel_advert_id, log_dt), insert=True)
 
 def record_audio(key, data, queue):
     # audio_url, dest_dir, prefix
