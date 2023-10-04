@@ -269,8 +269,10 @@ def create_table():
     execute_query(query_create_table_advertisements_log)
 
 def get_rel_advert_id(advert_id):
-    query_select_id = f"""SELECT id FROM advertisements 
-    WHERE registered_id={advert_id}"""
+    query_select_id = f"""
+        SELECT id FROM advertisements 
+        WHERE registered_id={advert_id}
+    """
 
     data = execute_query(query_select_id, req_response=True, top_n_rows=1)
     if data:
