@@ -1,0 +1,12 @@
+#python 3.11.2
+matplotlib==3.8.0
+numpy==1.26.0
+psycopg2==2.9.7
+pydub==0.25.1
+python-multipart==0.0.6
+scipy==1.11.2
+python-decouple
+requests
+mysql-connector-python
+
+# install ffmpeg and set in environment variables in windows
