@@ -455,7 +455,7 @@ def matching(filepath:str):
 def match_residual_audios():
     # if any files are left to match
     # match them by identifying from folder
-    residual_audios = glob.glob(configs["base_dir"]+"/audio_recordings/**/*.wav") 
+    residual_audios = glob.glob(configs["base_dir"]+"/audio/recordings/**/*.wav") 
     for residual_audio_filepath in residual_audios:
         matching(residual_audio_filepath)
 
@@ -551,7 +551,7 @@ if __name__=="__main__":
     configs = load_config(CONFIGS_PATH)
 
     base_dir = configs["base_dir"]
-    sources = load_config_db(os.path.join(base_dir, configs["rel_audio_dir"]))
+    sources = load_config_db(os.path.join(base_dir, configs["rel_rec_dir"]))
     configs['sources'] = sources
     configs['configs_path'] = CONFIGS_PATH
 
