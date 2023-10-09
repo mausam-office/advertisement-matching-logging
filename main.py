@@ -156,7 +156,7 @@ def cores_reqirement(num_sources:int, num_threads_per_process:int, max_threads_p
     #             debug_error_log(f"Maximum number of threads per process is 15")
 
 def update_configs(data:dict, is_source:bool=False):
-    configs = load_config('configs.json')
+    configs = load_config(configs_path)
 
     """ # if is_source:
     #     for key, val in data.items():
@@ -176,7 +176,7 @@ def update_configs(data:dict, is_source:bool=False):
             else:
                 debug_error_log(f"Can't add new key-value pairs in parent level.")
 
-    with open('configs.json', 'w', encoding='utf-8') as config_file:
+    with open(configs_path, 'w', encoding='utf-8') as config_file:
         json.dump(configs, config_file, ensure_ascii=False, indent=4)
 
 def filter_results(results:dict):
@@ -497,6 +497,8 @@ def process_run(configs:dict, process_num:int, num_threads_per_process:int, sour
             # print(f"Running state <{thread.name}> : {'active' if not stop_thread else 'inactive'}")
         
         if stop_thread:
+            # update configs 
+            update_configs({"stop_threads": False})
             break
         time.sleep(1.5)
         # debug_error_log('---'*15, timestamp=False)
