@@ -1,0 +1,9 @@
+{
+    "update": false,
+    "stop_threads": false,
+    "num_threads_per_process": 8,
+    "max_threads_per_process": 15,
+    "base_dir" : "D:/Anaconda/Audio-FingerPrinting/Desktop-Audio-Matching",
+    "rel_dejavu_conf" : "configs/dejavu.cnf.SAMPLE",
+    "rel_audio_dir" : "audio_recordings"
+}
