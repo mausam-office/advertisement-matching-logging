@@ -26,14 +26,17 @@ LOG_DIR  = "D:/Anaconda/Audio-FingerPrinting/Desktop-Audio-Matching/errors"
 
 class BackgroundRecording(threading.Thread):
     '''For recording live stream'''
-    def __init__(self, audio_url:str, dest_dir:str, dest_basename:str, queue:Queue, name:str='Background Recording'):
+    def __init__(self, audio_url:str, dest_dir:str, dest_basename:str, bitrate:int, queue:Queue, name:str='Background Recording'):
         self.audio_url = audio_url
         self.dest_dir = dest_dir
         self.dest_basename = dest_basename
+        self.bitrate = bitrate
         self.queue = queue
         self.running = False
         self.retry = 5
         self.restart_duration = 3600    # SECONDS
+        self.iterations = int(16000/127) * self.bitrate
+        self.clip_duration = 15    # seconds
         # self.dt = datetime.now()
         super().__init__(name=name)
         self.start()
@@ -45,7 +48,7 @@ class BackgroundRecording(threading.Thread):
     def run(self):
         os.makedirs(self.dest_dir, exist_ok=True)
         storing = True
-        duration_thresh = 15
+        
         
         while self.running:
             start_time = time.time()
@@ -77,7 +80,7 @@ class BackgroundRecording(threading.Thread):
                     for idx, chunk in enumerate(response.iter_content(chunk_size=1)):
                         if chunk:
                             rec_file.write(chunk)
-                        if idx>=16000*duration_thresh:
+                        if idx>=self.iterations*self.clip_duration:
                             storing = True
                             # self.count += 1
                             break
@@ -85,7 +88,7 @@ class BackgroundRecording(threading.Thread):
 
                 duration = time.time() - start_time
                 try:
-                    time.sleep(duration_thresh-duration-0.11)
+                    time.sleep(self.clip_duration-duration-0.11)
                 except:
                     pass
                 # print(f"duration to rec 1 audio {duration}")
@@ -383,6 +386,7 @@ def record_audio(key:str, data:dict, queue:Queue):
             data['audio_url'],
             data['dest_dir'],
             data['prefix'], 
+            data['bitrate'],
             queue,
             name=key
     )
@@ -417,10 +421,10 @@ def logging_removing(results:dict, filepath:str):
 
             keep_log(result['song_id'], channel_id, log_dt)
     # remove the file after matching
-    try:
-        os.remove(filepath)
-    except:
-        debug_error_log(f'audio file {os.path.basename(filepath)} used by another process, unable to remove') 
+    # try:
+    #     os.remove(filepath)
+    # except:
+    #     debug_error_log(f'audio file {os.path.basename(filepath)} used by another process, unable to remove') 
     
 def format_db_configs(data:list, audio_dir:str):
     sources = {}
@@ -429,6 +433,7 @@ def format_db_configs(data:list, audio_dir:str):
         id = str(row[0])
 
         source['audio_url'] = row[1]
+        source['bitrate'] = row[2]
         source['dest_dir'] = audio_dir + "/" + id
         source['prefix'] = id + "_clip_"
 
@@ -438,7 +443,7 @@ def format_db_configs(data:list, audio_dir:str):
     
 def load_config_db(audio_dir:str):
     query_select_channels = """
-        SELECT id, links FROM channels
+        SELECT id, links, bitrate FROM channels
     """
     data = execute_query(query_select_channels, req_response=True)
     # print(f"{data = }")
