@@ -32,6 +32,7 @@ class BackgroundRecording(threading.Thread):
         self.queue = queue
         self.running = False
         self.retry = 5
+        self.restart_duration = 3600    # SECONDS
         # self.dt = datetime.now()
         super().__init__(name=name)
         self.start()
@@ -58,9 +59,14 @@ class BackgroundRecording(threading.Thread):
                 self.retry -= 1
                 time.sleep(5)   # 5 seconds delay for next iteration
                 if self.retry < 1:
-                    self.running = False
+                    # self.running = False # never stop just delay 
                     debug_error_log(
                         f'{self.getName()}: Unable to record audio due to error\n{str(e)}'
+                    )
+                    time.sleep(self.restart_duration)
+                    self.retry = 5
+                    debug_error_log(
+                        f'{self.getName()}: Re-started'
                     )
                 # return
                 continue
