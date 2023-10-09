@@ -1,0 +1,14 @@
+*.pyc
+audio_recordings/
+configs/
+certificates/
+data-for-extracting-audio/
+dejavu-arch/
+tests/
+bg_recorder_logger_from_ui.py 
+configs-copy.json
+error*
+main-copy.py
+output.txt
+run_conda_env.bat
+.env
