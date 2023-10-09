@@ -21,6 +21,7 @@ from dejavu.logic.recognizer.file_recognizer import FileRecognizer
 processes = []
 threads = []
 
+CONFIGS_PATH = 'D:/Anaconda/Audio-FingerPrinting/Desktop-Audio-Matching/configs/configs.json'
 LOG_DIR  = "D:/Anaconda/Audio-FingerPrinting/Desktop-Audio-Matching/errors"
 
 class BackgroundRecording(threading.Thread):
@@ -156,7 +157,7 @@ def cores_reqirement(num_sources:int, num_threads_per_process:int, max_threads_p
     #             debug_error_log(f"Maximum number of threads per process is 15")
 
 def update_configs(data:dict, is_source:bool=False):
-    configs = load_config(configs_path)
+    configs = load_config(CONFIGS_PATH)
 
     """ # if is_source:
     #     for key, val in data.items():
@@ -176,7 +177,7 @@ def update_configs(data:dict, is_source:bool=False):
             else:
                 debug_error_log(f"Can't add new key-value pairs in parent level.")
 
-    with open(configs_path, 'w', encoding='utf-8') as config_file:
+    with open(CONFIGS_PATH, 'w', encoding='utf-8') as config_file:
         json.dump(configs, config_file, ensure_ascii=False, indent=4)
 
 def filter_results(results:dict):
@@ -539,20 +540,20 @@ def main(configs:dict, queue:Queue, djv:Dejavu):
 
 if __name__=="__main__":
     debug_error_log('---'*15, timestamp=False)
-    configs_path = 'D:/Anaconda/Audio-FingerPrinting/Desktop-Audio-Matching/configs/configs.json'
+    
     queue = Queue()
     create_table()
 
     # configurations 
-    if not os.path.exists(configs_path):
+    if not os.path.exists(CONFIGS_PATH):
         debug_error_log("No Config file in the directory")
         raise Exception(f"No Config file in the directory")
-    configs = load_config(configs_path)
+    configs = load_config(CONFIGS_PATH)
 
     base_dir = configs["base_dir"]
     sources = load_config_db(os.path.join(base_dir, configs["rel_audio_dir"]))
     configs['sources'] = sources
-    configs['configs_path'] = configs_path
+    configs['configs_path'] = CONFIGS_PATH
 
     # initialize dejavu
     dejavu_conf_path = os.path.join(base_dir, configs["rel_dejavu_conf"])
