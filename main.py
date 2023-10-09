@@ -560,8 +560,9 @@ if __name__=="__main__":
         config = json.load(f)
     try:
         djv = Dejavu(config)
-    except:
+    except Exception as e:
         debug_error_log("Can't initiate Dejavu")
+        debug_error_log(str(e))
         exit()
 
     # Starting application
