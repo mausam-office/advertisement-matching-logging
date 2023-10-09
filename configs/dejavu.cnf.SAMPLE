@@ -1,9 +1,0 @@
-{
-    "database": {
-        "host": "localhost",
-        "user": "postgres",
-        "password": "root",
-        "database": "dejavu"
-    },
-    "database_type": "postgres"
-}
