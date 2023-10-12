@@ -34,7 +34,7 @@ class BackgroundRecording(threading.Thread):
         self.queue = queue
         self.running = False
         self.retry = 3
-        self.delay = 10    # SECONDS
+        self.delay = 5    # SECONDS
         self.iterations = int(16000/127) * self.bitrate
         self.clip_duration = 15    # seconds
         # self.dt = datetime.now()
@@ -61,14 +61,14 @@ class BackgroundRecording(threading.Thread):
                 response = requests.get(self.audio_url, stream=True)
             except (Exception, SSLError) as e:
                 self.retry -= 1
-                time.sleep(5)   # 5 seconds delay for next iteration
+                time.sleep(self.delay)   # 5 seconds delay for next iteration
                 if self.retry < 1:
                     # self.running = False # never stop just delay 
                     debug_error_log(
                         f'{self.getName()}: Unable to record audio due to error\n{str(e)}'
                     )
-                    time.sleep(self.delay)
-                    self.retry = 5
+                    # time.sleep(self.delay)
+                    self.retry = 3
                     debug_error_log(
                         f'{self.getName()}: Re-started'
                     )
