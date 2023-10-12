@@ -434,6 +434,13 @@ def dt_from_filepath(filepath:str):
         debug_error_log("Datetime not found in the filename.")
         return None
 
+def delete_file(filepath):
+    try:
+        os.remove(filepath)
+    except:
+        debug_error_log(f'audio file {os.path.basename(filepath)} used by another process, unable to remove') 
+
+
 def logging_removing(results:dict, filepath:str):
     # perform database operation
     # print('results ', results)
@@ -446,11 +453,8 @@ def logging_removing(results:dict, filepath:str):
 
             keep_log(result['song_id'], channel_id, log_dt)
     # remove the file after matching
-    # try:
-    #     os.remove(filepath)
-    # except:
-    #     debug_error_log(f'audio file {os.path.basename(filepath)} used by another process, unable to remove') 
-    
+    delete_file(filepath)
+        
 def format_db_configs(data:list, audio_dir:str):
     sources = {}
     for row in data:
