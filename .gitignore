@@ -1,5 +1,5 @@
 *.pyc
-audio/recordings/
+audio/
 configs/
 certificates/
 data-for-extracting-audio/
