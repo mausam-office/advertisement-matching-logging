@@ -248,6 +248,15 @@ def execute_query(query:str, values:tuple=(), insert:bool=False, req_response:bo
     try:
         # conn = db_connection()
         conn = mysql_db_conn()
+    except (Exception) as error:
+        debug_error_log(f"Error 1\n{error}")
+        if cur is not None:
+            cur.close()
+        if conn is not None:
+            conn.close()
+        return
+        
+    try:
         cur = conn.cursor()
         if insert:
             if not values:
@@ -260,11 +269,27 @@ def execute_query(query:str, values:tuple=(), insert:bool=False, req_response:bo
                 debug_error_log('Executing without using values')
             cur.execute(query)
             skip_commit = True
-        
+    except (Exception) as error:
+        debug_error_log(f"Error 2\n{error}")
+        if cur is not None:
+            cur.close()
+        if conn is not None:
+            conn.close()
+        return
+    
+    try:
         # For MySQL DB commit should be omitted for data retival
         if not skip_commit:
             conn.commit()
-        
+    except (Exception) as error:
+        debug_error_log(f"Error 3\n{error}")
+        if cur is not None:
+            cur.close()
+        if conn is not None:
+            conn.close()
+        return
+    
+    try:
         # call fucntion to extract response if response required
         if req_response:
             # data = cur.fetchall() if top_n_rows <= 0 else cur.fetchone() if top_n_rows == 1 else cur.fetchmany(size=top_n_rows)
@@ -272,7 +297,7 @@ def execute_query(query:str, values:tuple=(), insert:bool=False, req_response:bo
             
     # except (Exception, psycopg2.DatabaseError) as error:
     except (Exception) as error:
-        debug_error_log(f"Error \n{error}")
+        debug_error_log(f"Error 4\n{error}")
     finally:
         if cur is not None:
             cur.close()
