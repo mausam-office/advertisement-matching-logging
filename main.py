@@ -33,7 +33,7 @@ class BackgroundRecording(threading.Thread):
         self.bitrate = bitrate
         self.queue = queue
         self.running = False
-        self.retry = 5
+        self.retry = 3
         self.restart_duration = 10    # SECONDS
         self.iterations = int(16000/127) * self.bitrate
         self.clip_duration = 15    # seconds
