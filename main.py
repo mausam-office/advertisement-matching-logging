@@ -34,7 +34,7 @@ class BackgroundRecording(threading.Thread):
         self.queue = queue
         self.running = False
         self.retry = 5
-        self.restart_duration = 3600    # SECONDS
+        self.restart_duration = 10    # SECONDS
         self.iterations = int(16000/127) * self.bitrate
         self.clip_duration = 15    # seconds
         # self.dt = datetime.now()
