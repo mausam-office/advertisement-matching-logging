@@ -33,7 +33,7 @@ class BackgroundRecording(threading.Thread):
         self.bitrate = bitrate
         self.queue = queue
         self.running = False
-        self.retry = 3
+        self.retry = 1
         self.delay = 5    # SECONDS
         self.iterations = int(16000/127) * self.bitrate
         self.clip_duration = 15    # seconds
@@ -67,8 +67,8 @@ class BackgroundRecording(threading.Thread):
                     debug_error_log(
                         f'{self.getName()}: Unable to record audio due to error\n{str(e)}'
                     )
-                    # time.sleep(self.delay)
-                    self.retry = 3
+                    time.sleep(self.delay * 2)
+                    self.retry = 1
                     debug_error_log(
                         f'{self.getName()}: Re-started'
                     )
@@ -96,6 +96,7 @@ class BackgroundRecording(threading.Thread):
     def stop(self):
         self.running = False
         self.join()
+        debug_error_log(f"{self.name}: Stopped")
 
 def debug_error_log(text:str, timestamp:bool=True):
     os.makedirs(LOG_DIR, exist_ok=True)
@@ -522,32 +523,16 @@ def process_run(configs:dict, process_num:int, num_threads_per_process:int, sour
                 # perform audio matching
                 if not os.path.exists(filepath):
                     debug_error_log(f"No file named {filepath}")
-                    # USE BOOLEAN TO SKIP MATCHING 
                 matching(filepath)
 
             if stop_thread:
                 thread.stop()
-                debug_error_log(f"{thread.name}: Stopped")
                 
-            # print(f"Running state <{thread.name}> : {'active' if not stop_thread else 'inactive'}")
-        
         if stop_thread:
             # update configs 
             update_configs({"stop_threads": False})
             break
         time.sleep(1.5)
-        # debug_error_log('---'*15, timestamp=False)
-    
-    # # if any files are left to match
-    # # match them by identifying from folder
-    # residual_audios = glob.glob(configs["base_dir"]+"/audio_recordings/**/*.wav") 
-    # for residual_audio_filepath in residual_audios:
-    #     try:
-    #         results = match_audio(djv, residual_audio_filepath)
-    #     except Exception as e:
-    #         results = None
-    #     finally:
-    #         logging_removing(results, residual_audio_filepath)
 
 def main(configs:dict, queue:Queue, djv:Dejavu):
     match_residual_audios()
@@ -564,7 +549,9 @@ def main(configs:dict, queue:Queue, djv:Dejavu):
     # processes = []
     for process_num in range(num_processes):
         process = Process(
-            target=process_run, args=(configs, process_num, num_threads_per_process, sources_keys, queue, djv)
+            target=process_run,
+            name='P' + str(process_num), 
+            args=(configs, process_num, num_threads_per_process, sources_keys, queue, djv)
         )
         processes.append(process)
         process.start()
@@ -607,22 +594,3 @@ if __name__=="__main__":
 
     debug_error_log("Background Threads stopped")
     debug_error_log('---'*15, timestamp=False)
-    
-
-
-    # update_configs(
-    #     {
-    #     "temp_src": {
-    #             "audio_url" : "https://radio-broadcast.ekantipur.com/stream",
-    #             "dest_dir" : "./audio_recordings",
-    #             "prefix" : "Temp_clip_"
-    #         }
-    #     }, 
-    #     is_source=True
-    # )
-    # update_configs(
-    #     {
-    #     "update": 1
-    #     }, 
-    #     is_source=False
-    # )
