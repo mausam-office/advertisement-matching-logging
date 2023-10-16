@@ -1,7 +1,21 @@
 @echo off
 
 REM Get the current time in HH24:MM format
-for /f "tokens=1 delims= " %%t in ('time /t') do set "current_time=%%t"
+for /f %%A in ('powershell Get-Date -Format HH:mm') do set "current_time=%%A"
+
+@REM for /f "tokens=1 delims= " %%t in ('time /t') do set "current_time=%%t"
+
+@REM for /f "tokens=1-3 delims=: " %%a in ('time /t') do (
+@REM     set "hour=%%a"
+@REM     set "ampm=%%c"
+@REM )
+@REM if /i "%ampm%"=="PM" (
+@REM     for /f "tokens=1-2" %%d in ("%hour") do (
+@REM         set /a "hour=%%d+12"
+@REM     )
+@REM )
+@REM set "current_time=%hour%:%time:~3,2%"
+
 
 REM Extract the hour part from the current time
 set "hour=%current_time:~0,2%"
