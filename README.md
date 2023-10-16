@@ -3,7 +3,7 @@
 <div align="center">
   <p>
     <a href="https://ramlaxmangroup.com/" target="_blank">
-      <img width="100%" src="./flow/software-arch.png"></a>
+      <img width="100%" src="./flow/software-arch-1.png"></a>
   </p>
 </div>
 
