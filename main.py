@@ -59,6 +59,11 @@ class BackgroundRecording(threading.Thread):
             self.dest_filename = os.path.join(self.dest_dir, self.dest_basename+ dt +'.wav')
             try:
                 response = requests.get(self.audio_url, stream=True)
+                content_type = response.headers['Content-Type']
+                if content_type not in ['audio/mpeg', 'audio/mp3', 'audio/wav']:
+                    debug_error_log(f"{self.name} {content_type = }")
+                    time.sleep(self.delay*12*5) # _*_*n -> n minutes
+                    continue
             except (Exception, SSLError) as e:
                 self.retry -= 1
                 time.sleep(self.delay)   # 5 seconds delay for next iteration
