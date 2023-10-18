@@ -61,9 +61,15 @@ class BackgroundRecording(threading.Thread):
                 response = requests.get(self.audio_url, stream=True)
                 content_type = response.headers['Content-Type']
                 if content_type not in ['audio/mpeg', 'audio/mp3', 'audio/wav']:
-                    debug_error_log(f"{self.name} {content_type = }")
-                    time.sleep(self.delay*12*5) # _*_*n -> n minutes
-                    continue
+                    try:
+                        debug_error_log(f"{self.name} {content_type = }")
+                        debug_error_log(f"{self.name} Response: {str(response.content, 'utf-8')}")
+                    except:
+                        pass
+                    finally:
+                        time.sleep(self.delay*12*5) # _*_*n -> n minutes
+                        debug_error_log(f"{self.name}: Restarted after content mismatch")
+                        continue
             except (Exception, SSLError) as e:
                 self.retry -= 1
                 time.sleep(self.delay)   # 5 seconds delay for next iteration
