@@ -33,12 +33,12 @@ class BackgroundRecording(threading.Thread):
         self.bitrate = bitrate
         self.queue = queue
         self.running = False
-        self.retry = 1
+        self.delay_min = 5
         self.delay = 5    # SECONDS
         self.iterations = int(16000/127) * self.bitrate
         self.clip_duration = 15    # seconds
-        # self.dt = datetime.now()
         super().__init__(name=name)
+        self.reset_retry()
         self.start()
     
     def start(self):
@@ -62,29 +62,33 @@ class BackgroundRecording(threading.Thread):
                 content_type = response.headers['Content-Type']
                 if content_type not in ['audio/mpeg', 'audio/mp3', 'audio/wav']:
                     try:
-                        debug_error_log(f"{self.name} {content_type = }")
-                        debug_error_log(f"{self.name} Response: {str(response.content, 'utf-8')}")
+                        self.retry_content_error -= 1
+                        if self.retry_content_error < 0:
+                            debug_error_log(f"{self.name} {content_type = }")
+                            debug_error_log(f"{self.name} Response: {str(response.content, 'utf-8')}")
                     except:
                         pass
                     finally:
-                        time.sleep(self.delay*12*5) # _*_*n -> n minutes
-                        debug_error_log(f"{self.name}: Restarted after content mismatch")
+                        if self.retry_content_error < 0:
+                            time.sleep(self.delay*12*self.sleep_factor*5) # _*_*_*n -> n minutes
+                            debug_error_log(f"{self.name}: Restarted after content mismatch.")
+                            self.sleep_factor += 1
                         continue
             except (Exception, SSLError) as e:
-                self.retry -= 1
+                self.retry_exception -= 1
                 time.sleep(self.delay)   # 5 seconds delay for next iteration
-                if self.retry < 1:
+                if self.retry_exception < 0:
                     # self.running = False # never stop just delay 
                     debug_error_log(
                         f'{self.getName()}: Unable to record audio due to error\n{str(e)}'
                     )
-                    time.sleep(self.delay * 2)
-                    self.retry = 1
+                    time.sleep(self.delay * 2 * self.sleep_factor)
                     debug_error_log(
                         f'{self.getName()}: Re-started'
                     )
                 # return
                 continue
+            self.reset_retry()
             if storing:
                 with open(self.dest_filename, 'wb') as rec_file:
                     storing = False
@@ -108,6 +112,11 @@ class BackgroundRecording(threading.Thread):
         self.running = False
         self.join()
         debug_error_log(f"{self.name}: Stopped")
+
+    def reset_retry(self):
+        self.retry_exception = 2
+        self.retry_content_error = 3
+        self.sleep_factor = 1
 
 def debug_error_log(text:str, timestamp:bool=True):
     os.makedirs(LOG_DIR, exist_ok=True)
