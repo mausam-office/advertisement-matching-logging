@@ -466,6 +466,7 @@ def logging_removing(results:dict, filepath:str):
     # perform database operation
     # print('results ', results)
     if results:
+        debug_error_log(f'results: {str(results)}')
         for result in list(results.values()):
             # print('single result ', result)
             channel_id = get_channel_id(filepath)
