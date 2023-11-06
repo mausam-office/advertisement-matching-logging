@@ -216,8 +216,8 @@ def filter_results(results:dict):
         input_confidence = results['results'][i]['input_confidence']
         offset_seconds = results['results'][i]['offset_seconds']
 
-        # if fingerprinted_confidence>=0.03 and input_confidence>0.15 and offset_seconds>=0:
-        if input_confidence>0.0 and offset_seconds>=0:
+        if fingerprinted_confidence>=0.03 and input_confidence>0.15 and offset_seconds>=0:
+        # if input_confidence>0.0 and offset_seconds>=0:
             debug_error_log(f"validated {results['results'][0]['song_name']}")
             offset_value = 0.668725
             actual_offset_seconds = round(offset_seconds/offset_value, 2)
