@@ -233,8 +233,8 @@ def filter_results(results:dict):
             }
             debug_error_log(f"validated {song_name=} {input_confidence=} {fingerprinted_confidence=}")
         else:
-            # pass
-            debug_error_log(f"not validated {song_name=} {input_confidence=} {fingerprinted_confidence=}")
+            pass
+            # debug_error_log(f"not validated {song_name=} {input_confidence=} {fingerprinted_confidence=}")
     return filtered_results
 
 def match_audio(djv:Dejavu, filepath:str):
