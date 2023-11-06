@@ -262,10 +262,10 @@ def db_connection():
 
 def mysql_db_conn():
     conn = mysql.connector.connect(
-        host=config("MYSQL_HOST"),
-        user=config("MYSQL_USER"),
-        password=config("MYSQL_PASSWORD"),
-        database=config("MYSQL_DATABASE")
+        host="localhost",
+        user='radio_advertisement',
+        password="12345678",
+        database="radio"
     )
     return conn
 
