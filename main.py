@@ -487,7 +487,21 @@ def logging_removing(results:dict, filepath:str):
     # remove the file after matching
     if not logged:
         delete_file(filepath)
-        
+
+def init_dejavu(configs):
+    dejavu_conf_path = os.path.join(base_dir, configs["rel_dejavu_conf"])
+    if not os.path.exists(dejavu_conf_path):
+        debug_error_log("Bad dejavu config file path.")
+    with open(dejavu_conf_path) as f:
+        config = json.load(f)
+    try:
+        djv = Dejavu(config)
+        return djv
+    except Exception as e:
+        debug_error_log("Can't initiate Dejavu")
+        debug_error_log(str(e))
+        exit()
+
 def format_db_configs(data:list, audio_dir:str):
     sources = {}
     for row in data:
@@ -511,7 +525,7 @@ def load_config_db(audio_dir:str):
     # print(f"{data = }")
     return format_db_configs(data, audio_dir=audio_dir)
 
-def matching(filepath:str):
+def matching(filepath:str, djv:Dejavu):
     try:
         results = match_audio(djv, filepath)
     except Exception as e:
@@ -520,12 +534,12 @@ def matching(filepath:str):
     finally:
         logging_removing(results, filepath)
 
-def match_residual_audios():
+def match_residual_audios(djv):
     # if any files are left to match
     # match them by identifying from folder
     residual_audios = glob.glob(configs["base_dir"]+"/audio/recordings/**/*.wav") 
     for residual_audio_filepath in residual_audios:
-        matching(residual_audio_filepath)
+        matching(residual_audio_filepath, djv)
 
 def process_run(configs:dict, process_num:int, num_threads_per_process:int, sources_keys:list, queue:Queue, djv: Dejavu):
     global threads
@@ -557,7 +571,7 @@ def process_run(configs:dict, process_num:int, num_threads_per_process:int, sour
                 if not os.path.exists(filepath):
                     debug_error_log(f"No file named {filepath}")
                     continue
-                matching(filepath)
+                matching(filepath, djv)
 
             if stop_thread:
                 thread.stop()
@@ -569,7 +583,7 @@ def process_run(configs:dict, process_num:int, num_threads_per_process:int, sour
         time.sleep(1.5)
 
 def main(configs:dict, queue:Queue, djv:Dejavu):
-    match_residual_audios()
+    match_residual_audios(djv)
     global processes
     update_requires = configs["update"]
     sources = configs['sources']
@@ -611,17 +625,19 @@ if __name__=="__main__":
     configs['configs_path'] = CONFIGS_PATH
 
     # initialize dejavu
-    dejavu_conf_path = os.path.join(base_dir, configs["rel_dejavu_conf"])
-    if not os.path.exists(dejavu_conf_path):
-        debug_error_log("Bad dejavu config file path.")
-    with open(dejavu_conf_path) as f:
-        config = json.load(f)
-    try:
-        djv = Dejavu(config)
-    except Exception as e:
-        debug_error_log("Can't initiate Dejavu")
-        debug_error_log(str(e))
-        exit()
+    # dejavu_conf_path = os.path.join(base_dir, configs["rel_dejavu_conf"])
+    # if not os.path.exists(dejavu_conf_path):
+    #     debug_error_log("Bad dejavu config file path.")
+    # with open(dejavu_conf_path) as f:
+    #     config = json.load(f)
+    # try:
+    #     djv = Dejavu(config)
+    # except Exception as e:
+    #     debug_error_log("Can't initiate Dejavu")
+    #     debug_error_log(str(e))
+    #     exit()
+
+    djv = init_dejavu(configs)
 
     # Starting application
     main(configs, queue, djv)
