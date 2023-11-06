@@ -123,7 +123,9 @@ class BackgroundRecording(threading.Thread):
 
 def debug_error_log(text:str, timestamp:bool=True):
     os.makedirs(LOG_DIR, exist_ok=True)
-    with open(LOG_DIR + "/error.log", 'a') as err_file:
+    # filename -> '/YYYY-MM-DD-error.log'
+    filename = '/' + str(datetime.now().date()) + '-' + 'error.log'
+    with open(LOG_DIR + filename, 'a') as err_file:
         text = f"{datetime.now()} {text}" if timestamp else text
         print(text, file=err_file)
 
