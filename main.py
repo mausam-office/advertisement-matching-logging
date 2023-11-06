@@ -215,14 +215,13 @@ def filter_results(results:dict):
         fingerprinted_confidence = results['results'][i]['fingerprinted_confidence']
         input_confidence = results['results'][i]['input_confidence']
         offset_seconds = results['results'][i]['offset_seconds']
+        song_name = results['results'][0]['song_name']
 
         if fingerprinted_confidence>=0.03 and input_confidence>0.15 and offset_seconds>=0:
         # if input_confidence>0.0 and offset_seconds>=0:
-            debug_error_log(f"validated {results['results'][0]['song_name']}")
             offset_value = 0.668725
             actual_offset_seconds = round(offset_seconds/offset_value, 2)
             song_id = results['results'][0]['song_id']
-            song_name = results['results'][0]['song_name']
 
             filtered_results[i] = {
                 "song_id" : song_id,
@@ -232,9 +231,10 @@ def filter_results(results:dict):
                 "offset_seconds" : actual_offset_seconds
                 
             }
+            debug_error_log(f"validated {song_name=} {input_confidence=} {fingerprinted_confidence=}")
         else:
             # pass
-            debug_error_log(f"not validated {results['results'][0]['song_name']}")
+            debug_error_log(f"not validated {song_name=} {input_confidence=} {fingerprinted_confidence=}")
     return filtered_results
 
 def match_audio(djv:Dejavu, filepath:str):
@@ -243,7 +243,7 @@ def match_audio(djv:Dejavu, filepath:str):
             FileRecognizer, 
             filepath
         )
-        debug_error_log(f'Raw Results: {str(results)}')
+        # debug_error_log(f'Raw Results: {str(results)}')
     except Exception as e:
         debug_error_log(str(e))
     
@@ -251,7 +251,7 @@ def match_audio(djv:Dejavu, filepath:str):
         results = filter_results(results)
     else:
         results = {}
-    debug_error_log(f'Filtered Results: {str(results)}')
+    # debug_error_log(f'Filtered Results: {str(results)}')
     return results
 
 def db_connection():
@@ -483,10 +483,9 @@ def logging_removing(results:dict, filepath:str):
             # keep_log(result['song_id'], source)
             log_dt = dt_from_filepath(filepath)
 
-            logged = logged or keep_log(result['song_id'], channel_id, log_dt)
+            keep_log(result['song_id'], channel_id, log_dt)
     # remove the file after matching
-    if not logged:
-        delete_file(filepath)
+    delete_file(filepath)
 
 def init_dejavu(configs):
     dejavu_conf_path = os.path.join(base_dir, configs["rel_dejavu_conf"])
