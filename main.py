@@ -399,7 +399,6 @@ def check_validity(advert_id:int, channel_id:int):
     return False, "No data or channel id and advertisement id mismatch"
 
 def log_needed(advert_id:int, channel_id:int):
-    return True
     # check validity
     is_valid, msg = check_validity(advert_id, channel_id)
     if not is_valid:
