@@ -14,3 +14,4 @@ run_conda_env.bat
 .env
 flow/software-arch-1.drawio
 temp_task.bat
+info.txt

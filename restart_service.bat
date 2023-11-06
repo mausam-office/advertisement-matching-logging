@@ -20,7 +20,8 @@ for /f %%A in ('powershell Get-Date -Format HH:mm') do set "current_time=%%A"
 REM Extract the hour part from the current time
 set "hour=%current_time:~0,2%"
 
-echo Stopped at : %date% %time% > "D:\Mausam\Learn\batch\TEMP.txt"
+@REM echo Stopped at : %date% %time% > "D:\Mausam\Learn\batch\TEMP.txt"
+echo Stopped at : %date% %time% > "C:/python-apps/Advertisement-APP/advertisement-matching-logging/batch_log.txt"
 net stop AudioMatchingService
 
 REM Check if the current hour is within the desired range (5 AM to 10 PM)
@@ -32,7 +33,7 @@ if %hour% geq 05 if %hour% leq 22 (
     
     @REM timeout 1
     net start AudioMatchingService
-    echo Restarted at : %date% %time% > "D:\Mausam\Learn\batch\TEMP.txt"
-
+    @REM echo Restarted at : %date% %time% > "D:\Mausam\Learn\batch\TEMP.txt"
+    echo Restarted at : %date% %time% > "C:/python-apps/Advertisement-APP/advertisement-matching-logging/batch_log.txt"
     @REM nssm restart AudioMatchingService
 ) 

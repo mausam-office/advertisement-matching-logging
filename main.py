@@ -21,8 +21,10 @@ from dejavu.logic.recognizer.file_recognizer import FileRecognizer
 processes = []
 threads = []
 
-CONFIGS_PATH = 'D:/Anaconda/Audio-FingerPrinting/Desktop-Audio-Matching/configs/configs.json'
-LOG_DIR  = "D:/Anaconda/Audio-FingerPrinting/Desktop-Audio-Matching/errors"
+# CONFIGS_PATH = 'D:/Anaconda/Audio-FingerPrinting/Desktop-Audio-Matching/configs/configs.json'
+# LOG_DIR  = "D:/Anaconda/Audio-FingerPrinting/Desktop-Audio-Matching/errors"
+CONFIGS_PATH = 'C:/python-apps/Advertisement-APP/advertisement-matching-logging/configs/configs.json'
+LOG_DIR  = "C:/python-apps/Advertisement-APP/advertisement-matching-logging/errors"
 
 class BackgroundRecording(threading.Thread):
     '''For recording live stream'''
