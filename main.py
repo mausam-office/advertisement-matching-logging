@@ -217,7 +217,7 @@ def filter_results(results:dict):
         offset_seconds = results['results'][i]['offset_seconds']
 
         if fingerprinted_confidence>=0.03 and input_confidence>0.15 and offset_seconds>=0:
-            # print('validated')
+            debug_error_log(f"validated {results['results'][0]['song_name']}")
             offset_value = 0.668725
             actual_offset_seconds = round(offset_seconds/offset_value, 2)
             song_id = results['results'][0]['song_id']
@@ -232,8 +232,8 @@ def filter_results(results:dict):
                 
             }
         else:
-            pass
-            # print('not validated')
+            # pass
+            debug_error_log(f"not validated {results['results'][0]['song_name']}")
     return filtered_results
 
 def match_audio(djv:Dejavu, filepath:str):
@@ -250,6 +250,7 @@ def match_audio(djv:Dejavu, filepath:str):
         results = filter_results(results)
     else:
         results = {}
+    debug_error_log(f'Filtered Results: {str(results)}')
     return results
 
 def db_connection():
@@ -472,7 +473,7 @@ def logging_removing(results:dict, filepath:str):
     # perform database operation
     # print('results ', results)
     if results:
-        debug_error_log(f'Filtered Results: {str(results)}')
+        debug_error_log(f'Final Results: {str(results)}')
         for result in list(results.values()):
             # print('single result ', result)
             channel_id = get_channel_id(filepath)
