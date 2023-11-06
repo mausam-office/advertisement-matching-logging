@@ -515,6 +515,7 @@ def matching(filepath:str):
     try:
         results = match_audio(djv, filepath)
     except Exception as e:
+        debug_error_log(f"Matching error {e}")
         results = None
     finally:
         logging_removing(results, filepath)
