@@ -85,6 +85,7 @@ class BackgroundRecording(threading.Thread):
                         f'{self.getName()}: Unable to record audio due to error\n{str(e)}'
                     )
                     time.sleep(self.delay * 2 * self.sleep_factor)
+                    self.sleep_factor += 1
                     debug_error_log(
                         f'{self.getName()}: Re-started'
                     )
