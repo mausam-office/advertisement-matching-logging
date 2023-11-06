@@ -216,7 +216,8 @@ def filter_results(results:dict):
         input_confidence = results['results'][i]['input_confidence']
         offset_seconds = results['results'][i]['offset_seconds']
 
-        if fingerprinted_confidence>=0.03 and input_confidence>0.15 and offset_seconds>=0:
+        # if fingerprinted_confidence>=0.03 and input_confidence>0.15 and offset_seconds>=0:
+        if input_confidence>0.0 and offset_seconds>=0:
             debug_error_log(f"validated {results['results'][0]['song_name']}")
             offset_value = 0.668725
             actual_offset_seconds = round(offset_seconds/offset_value, 2)
@@ -398,6 +399,7 @@ def check_validity(advert_id:int, channel_id:int):
     return False, "No data or channel id and advertisement id mismatch"
 
 def log_needed(advert_id:int, channel_id:int):
+    return True
     # check validity
     is_valid, msg = check_validity(advert_id, channel_id)
     if not is_valid:
@@ -424,7 +426,7 @@ def keep_log(advert_id:int, channel_id:int, log_dt):
     rel_advert_id = get_rel_advert_id(advert_id)
 
     if not log_status or rel_advert_id is None:
-        return
+        return False
     
     # grab channel id from database
     query_insert_log = """
@@ -432,6 +434,7 @@ def keep_log(advert_id:int, channel_id:int, log_dt):
         VALUES (%s, %s, %s, %s);
     """
     execute_query(query_insert_log, values=(advert_id, channel_id, rel_advert_id, log_dt), insert=True)
+    return True
 
 def record_audio(key:str, data:dict, queue:Queue):
     # audio_url, dest_dir, prefix
@@ -472,6 +475,7 @@ def delete_file(filepath):
 def logging_removing(results:dict, filepath:str):
     # perform database operation
     # print('results ', results)
+    logged = False
     if results:
         debug_error_log(f'Final Results: {str(results)}')
         for result in list(results.values()):
@@ -480,9 +484,10 @@ def logging_removing(results:dict, filepath:str):
             # keep_log(result['song_id'], source)
             log_dt = dt_from_filepath(filepath)
 
-            keep_log(result['song_id'], channel_id, log_dt)
+            logged = logged or keep_log(result['song_id'], channel_id, log_dt)
     # remove the file after matching
-    delete_file(filepath)
+    if not logged:
+        delete_file(filepath)
         
 def format_db_configs(data:list, audio_dir:str):
     sources = {}
