@@ -1,6 +1,8 @@
 *.pyc
 audio/
-configs/
+configs/configs-copy.json
+configs/dejavu.cnf.SAMPLE
+configs/temp.json
 certificates/
 data-for-extracting-audio/
 dejavu-arch/
