@@ -556,6 +556,7 @@ def process_run(configs:dict, process_num:int, num_threads_per_process:int, sour
                 # perform audio matching
                 if not os.path.exists(filepath):
                     debug_error_log(f"No file named {filepath}")
+                    continue
                 matching(filepath)
 
             if stop_thread:
