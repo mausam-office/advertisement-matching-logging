@@ -239,6 +239,7 @@ def match_audio(djv:Dejavu, filepath:str):
             FileRecognizer, 
             filepath
         )
+        debug_error_log(f'Raw Results: {str(results)}')
     except Exception as e:
         debug_error_log(str(e))
     
@@ -468,7 +469,7 @@ def logging_removing(results:dict, filepath:str):
     # perform database operation
     # print('results ', results)
     if results:
-        debug_error_log(f'results: {str(results)}')
+        debug_error_log(f'Filtered Results: {str(results)}')
         for result in list(results.values()):
             # print('single result ', result)
             channel_id = get_channel_id(filepath)
