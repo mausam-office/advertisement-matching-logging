@@ -231,7 +231,7 @@ def filter_results(results:dict):
                 "offset_seconds" : actual_offset_seconds
                 
             }
-            debug_error_log(f"validated {song_name=} {input_confidence=} {fingerprinted_confidence=}")
+            # debug_error_log(f"validated {song_name=} {input_confidence=} {fingerprinted_confidence=}")
         else:
             pass
             # debug_error_log(f"not validated {song_name=} {input_confidence=} {fingerprinted_confidence=}")
@@ -425,7 +425,7 @@ def keep_log(advert_id:int, channel_id:int, log_dt, input_conf:float, fingerprin
     rel_advert_id = get_rel_advert_id(advert_id)
 
     if not log_status or rel_advert_id is None:
-        return False
+        return
     
     # grab channel id from database
     query_insert_log = """
@@ -433,7 +433,6 @@ def keep_log(advert_id:int, channel_id:int, log_dt, input_conf:float, fingerprin
         VALUES (%s, %s, %s, %s, %s, %s, %s);
     """
     execute_query(query_insert_log, values=(advert_id, channel_id, rel_advert_id, log_dt, input_conf, fingerprinted_conf, offset_seconds), insert=True)
-    return True
 
 def record_audio(key:str, data:dict, queue:Queue):
     # audio_url, dest_dir, prefix
@@ -474,13 +473,12 @@ def delete_file(filepath):
 def logging_removing(results:dict, filepath:str):
     # perform database operation
     # print('results ', results)
-    logged = False
     if results:
-        debug_error_log(f'Final Results: {str(results)}')
+        # debug_error_log(f'Final Results: {str(results)}')
         for result in list(results.values()):
             # print('single result ', result)
             channel_id = get_channel_id(filepath)
-            # keep_log(result['song_id'], source)
+            
             log_dt = dt_from_filepath(filepath)
 
             # extract input and fingerprinted confidence, offset seconds
