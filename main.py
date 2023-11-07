@@ -133,7 +133,7 @@ def get_channel_id(filepath:str):
     basename = os.path.basename(filepath)
     basename = os.path.splitext(basename)[0]
     id = basename.split('_')[0]
-    return id
+    return int(id)
 
 def load_config(data_path:str):
     with open(data_path, 'r') as config_file:
