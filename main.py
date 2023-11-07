@@ -419,7 +419,7 @@ def log_needed(advert_id:int, channel_id:int):
         return False
     return True
 
-def keep_log(advert_id:int, channel_id:int, log_dt):
+def keep_log(advert_id:int, channel_id:int, log_dt, input_conf:float, fingerprinted_conf:float, offset_seconds:float):
     log_status = log_needed(advert_id, channel_id)
     debug_error_log(f"{log_status = } for {advert_id = } and {channel_id = }") # store advert id and channel id as well
     rel_advert_id = get_rel_advert_id(advert_id)
@@ -429,10 +429,10 @@ def keep_log(advert_id:int, channel_id:int, log_dt):
     
     # grab channel id from database
     query_insert_log = """
-        INSERT INTO advertisements_log(advert_id, channel_id, advertisement_id, log_time)
-        VALUES (%s, %s, %s, %s);
+        INSERT INTO advertisements_log(advert_id, channel_id, advertisement_id, log_time, input_conf, fingerprint_conf, offset_sec)
+        VALUES (%s, %s, %s, %s, %s, %s, %s);
     """
-    execute_query(query_insert_log, values=(advert_id, channel_id, rel_advert_id, log_dt), insert=True)
+    execute_query(query_insert_log, values=(advert_id, channel_id, rel_advert_id, log_dt, input_conf, fingerprinted_conf, offset_seconds), insert=True)
     return True
 
 def record_audio(key:str, data:dict, queue:Queue):
@@ -483,7 +483,12 @@ def logging_removing(results:dict, filepath:str):
             # keep_log(result['song_id'], source)
             log_dt = dt_from_filepath(filepath)
 
-            keep_log(result['song_id'], channel_id, log_dt)
+            # extract input and fingerprinted confidence, offset seconds
+            input_conf = result['input_confidence']
+            fingerprinted_conf = result['fingerprinted_confidence']
+            offset_seconds = result['offset_seconds']
+
+            keep_log(result['song_id'], channel_id, log_dt, input_conf, fingerprinted_conf, offset_seconds)
     # remove the file after matching
     delete_file(filepath)
 
