@@ -522,6 +522,7 @@ def format_db_configs(data:list, audio_dir:str):
 def load_config_db(audio_dir:str):
     query_select_channels = """
         SELECT id, links, bitrate FROM channels
+        WHERE status=1
     """
     data = execute_query(query_select_channels, req_response=True)
     # print(f"{data = }")
