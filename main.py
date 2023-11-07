@@ -1,6 +1,7 @@
 import glob
 import os
 import json
+import shutil
 import threading
 import psycopg2
 import time
@@ -274,6 +275,7 @@ def execute_query(query:str, values:tuple=(), insert:bool=False, req_response:bo
     cur = None
     data = None
     skip_commit = False
+    inserted = False
     try:
         # conn = db_connection()
         conn = mysql_db_conn()
@@ -292,6 +294,7 @@ def execute_query(query:str, values:tuple=(), insert:bool=False, req_response:bo
                 debug_error_log('Values not supplied for query')
                 return
             cur.execute(query, values)
+            inserted = True
         else:
             if values:
                 debug_error_log('Does your query requrires values? ')
@@ -335,6 +338,9 @@ def execute_query(query:str, values:tuple=(), insert:bool=False, req_response:bo
     
     if req_response:
         return data
+    if inserted:
+        # has less priority than req_response
+        return inserted
     return
 
 def create_table():
@@ -432,7 +438,11 @@ def keep_log(advert_id:int, channel_id:int, log_dt, input_conf:float, fingerprin
         INSERT INTO advertisements_log(advert_id, channel_id, advertisement_id, log_time, input_conf, fingerprint_conf, offset_sec)
         VALUES (%s, %s, %s, %s, %s, %s, %s);
     """
-    execute_query(query_insert_log, values=(advert_id, channel_id, rel_advert_id, log_dt, input_conf, fingerprinted_conf, offset_seconds), insert=True)
+    is_valid_advertisement = execute_query(
+        query_insert_log, values=(advert_id, channel_id, rel_advert_id, log_dt, input_conf, fingerprinted_conf, offset_seconds), 
+        insert=True
+    )
+    return is_valid_advertisement
 
 def record_audio(key:str, data:dict, queue:Queue):
     # audio_url, dest_dir, prefix
@@ -470,7 +480,7 @@ def delete_file(filepath):
         debug_error_log(f'audio file {os.path.basename(filepath)} used by another process, unable to remove') 
 
 
-def logging_removing(results:dict, filepath:str):
+def logging_removing(results:dict, filepath:str, matching_dir:str):
     # perform database operation
     # print('results ', results)
     if results:
@@ -486,7 +496,16 @@ def logging_removing(results:dict, filepath:str):
             fingerprinted_conf = result['fingerprinted_confidence']
             offset_seconds = result['offset_seconds']
 
-            keep_log(result['song_id'], channel_id, log_dt, input_conf, fingerprinted_conf, offset_seconds)
+            is_valid_advertisement = keep_log(result['song_id'], channel_id, log_dt, input_conf, fingerprinted_conf, offset_seconds)
+            # copy audio file to matched folder if matched
+            if is_valid_advertisement:
+                try:
+                    shutil.copy(filepath, matching_dir)
+                except Exception as e:
+                    debug_error_log(str(e))
+            
+
+
     # remove the file after matching
     delete_file(filepath)
 
@@ -528,23 +547,23 @@ def load_config_db(audio_dir:str):
     # print(f"{data = }")
     return format_db_configs(data, audio_dir=audio_dir)
 
-def matching(filepath:str, djv:Dejavu):
+def matching(filepath:str, djv:Dejavu, matching_dir:str):
     try:
         results = match_audio(djv, filepath)
     except Exception as e:
         debug_error_log(f"Matching error {e}")
         results = None
     finally:
-        logging_removing(results, filepath)
+        logging_removing(results, filepath, matching_dir)
 
-def match_residual_audios(djv):
+def match_residual_audios(djv, matching_dir):
     # if any files are left to match
     # match them by identifying from folder
     residual_audios = glob.glob(configs["base_dir"]+"/audio/recordings/**/*.wav") 
     for residual_audio_filepath in residual_audios:
-        matching(residual_audio_filepath, djv)
+        matching(residual_audio_filepath, djv, matching_dir)
 
-def process_run(configs:dict, process_num:int, num_threads_per_process:int, sources_keys:list, queue:Queue, djv: Dejavu):
+def process_run(configs:dict, process_num:int, num_threads_per_process:int, sources_keys:list, queue:Queue, djv: Dejavu, matching_dir:str):
     global threads
     # print(process_num)
     keys_idx = process_num*num_threads_per_process
@@ -574,7 +593,7 @@ def process_run(configs:dict, process_num:int, num_threads_per_process:int, sour
                 if not os.path.exists(filepath):
                     debug_error_log(f"No file named {filepath}")
                     continue
-                matching(filepath, djv)
+                matching(filepath, djv, matching_dir)
 
             if stop_thread:
                 thread.stop()
@@ -585,8 +604,8 @@ def process_run(configs:dict, process_num:int, num_threads_per_process:int, sour
             break
         time.sleep(1.5)
 
-def main(configs:dict, queue:Queue, djv:Dejavu):
-    match_residual_audios(djv)
+def main(configs:dict, queue:Queue, djv:Dejavu, matching_dir:str):
+    match_residual_audios(djv, matching_dir)
     global processes
     update_requires = configs["update"]
     sources = configs['sources']
@@ -602,7 +621,7 @@ def main(configs:dict, queue:Queue, djv:Dejavu):
         process = Process(
             target=process_run,
             name='P' + str(process_num), 
-            args=(configs, process_num, num_threads_per_process, sources_keys, queue, djv)
+            args=(configs, process_num, num_threads_per_process, sources_keys, queue, djv, matching_dir)
         )
         processes.append(process)
         process.start()
@@ -627,6 +646,9 @@ if __name__=="__main__":
     configs['sources'] = sources
     configs['configs_path'] = CONFIGS_PATH
 
+    matching_dir = os.path.join(configs['base_dir'], configs['rel_matched_dir'])
+    os.makedirs(matching_dir, exist_ok=True)
+
     # initialize dejavu
     # dejavu_conf_path = os.path.join(base_dir, configs["rel_dejavu_conf"])
     # if not os.path.exists(dejavu_conf_path):
@@ -643,7 +665,7 @@ if __name__=="__main__":
     djv = init_dejavu(configs)
 
     # Starting application
-    main(configs, queue, djv)
+    main(configs, queue, djv, matching_dir)
 
     debug_error_log("Background Threads stopped")
     debug_error_log('---'*15, timestamp=False)

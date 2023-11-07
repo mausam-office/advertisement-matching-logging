@@ -6,5 +6,6 @@
     "base_dir": "C:/python-apps/Advertisement-APP/advertisement-matching-logging", 
     "rel_dejavu_conf": "configs/dejavu.cnf.SAMPLE",
     "rel_rec_dir": "audio/recordings",
-    "rel_clip_dir": "audio/clips"
+    "rel_clip_dir": "audio/clips",
+    "rel_matched_dir": "audio/matched"
 }
