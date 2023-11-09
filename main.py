@@ -405,6 +405,7 @@ def check_validity(advert_id:int, channel_id:int):
     return False, "No data or channel id and advertisement id mismatch"
 
 def log_needed(advert_id:int, channel_id:int):
+    relog_duration = 35
     # check validity
     is_valid, msg = check_validity(advert_id, channel_id)
     if not is_valid:
@@ -419,7 +420,7 @@ def log_needed(advert_id:int, channel_id:int):
     # except:
     #     pass
 
-    if duration is not None and duration.seconds < 30:  # duration.total_seconds() returns float precision
+    if duration is not None and duration.seconds <= relog_duration:  # duration.total_seconds() returns float precision
         '''No need to log'''
         debug_error_log("last log time validation failed")
         return False
